@@ -28,7 +28,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install pip-audit  # Cài tool quét
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  # Cài deps từ file
-
+    - name: Upgrade pip-audit
+      run: pip install --upgrade pip-audit
+  
     - name: Run pip-audit scan
       run: |
         pip-audit -r requirements.txt --format sarif --output results.sarif  # Chạy quét, lưu SARIF (định dạng chuẩn cho GitHub)
