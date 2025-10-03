@@ -28,18 +28,14 @@ jobs:
         pip install --upgrade pip-audit
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Run pip-audit scan
+    - name: Run pip-audit scan (JSON)
       run: |
-        # Quét dependencies, xuất file SARIF
-        pip-audit -r requirements.txt --format sarif --output results.sarif
+        pip-audit -r requirements.txt --format json --output results.json
 
-        # Nếu có vuln nghiêm trọng thì fail job (bạn có thể tùy chỉnh ignore)
-        if pip-audit -r requirements.txt; then
-          echo "✅ No critical vulns found"
-        else
-          echo "❌ Vulns found!"
-          exit 1
-        fi
+    - name: Convert JSON to SARIF
+      run: |
+        pip install sarif-tools
+        sarif-tools from-pip-audit results.json > results.sarif
 
     - name: Upload SARIF results (cho Security tab trên GitHub)
       uses: github/codeql-action/upload-sarif@v3
