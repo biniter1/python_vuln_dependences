@@ -1,39 +1,41 @@
 name: Dependency Vulnerability Scan
 
 on:
-  # Quét khi push hoặc pull request
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  # Quét định kỳ: Hàng ngày lúc 2AM UTC (có thể chỉnh schedule)
   schedule:
-    - cron: '0 2 * * *'  # Format: minute hour day month day-of-week
+    - cron: '0 2 * * *'
 
 jobs:
   scan:
-    runs-on: ubuntu-latest  # Môi trường chạy: Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4  # Lấy code repo
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'  # Phiên bản Python
+        python-version: '3.10'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pip-audit  # Cài tool quét
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  # Cài deps từ file
+        # Cài và nâng cấp pip-audit lên bản mới nhất để hỗ trợ SARIF
+        pip install --upgrade pip-audit
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Run pip-audit scan
+    - name: Run pip-audit scan (JSON)
       run: |
-        pip-audit -r requirements.txt --format sarif --output results.sarif  # Chạy quét, lưu SARIF (định dạng chuẩn cho GitHub)
-        # Nếu có vuln nghiêm trọng, fail job (tùy chọn)
-        if pip-audit -r requirements.txt --ignore-vuln CVE-XXXX; then echo "No critical vulns"; else echo "Vulns found!"; exit 1; fi
+        pip-audit -r requirements.txt --format json --output results.json
+
+    - name: Convert JSON to SARIF
+      run: |
+        pip install sarif-tools
+        sarif-tools from-pip-audit results.json > results.sarif
 
     - name: Upload SARIF results (cho Security tab trên GitHub)
       uses: github/codeql-action/upload-sarif@v3
